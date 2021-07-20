@@ -4,6 +4,7 @@ package com.xxmassdeveloper.mpchartexample;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import androidx.core.content.ContextCompat;
@@ -17,18 +18,25 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.IAxisValueFormatter;
+import com.github.mikephil.charting.formatter.IValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +46,12 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
     private LineChart chart;
     private SeekBar seekBarX, seekBarY;
     private TextView tvX, tvY;
+
+    private String[] date = new String[]{"07-14","07-15","07-16","07-17","07-18","07-19","07-20"};
+
+
+    private int[] data1 = new int[]{40,30,28,34,33,33,22};
+    private String[] data2 = new String[]{"301.00","288.00","214.50","207.50","197.50","231.00","232.50"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,11 +78,7 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
         chart.getDescription().setEnabled(false);
         chart.setDrawBorders(false);
 
-        chart.getAxisLeft().setEnabled(false);
-        chart.getAxisRight().setDrawAxisLine(false);
-        chart.getAxisRight().setDrawGridLines(false);
-        chart.getXAxis().setDrawAxisLine(false);
-        chart.getXAxis().setDrawGridLines(false);
+        chart.getAxisLeft().setEnabled(true);
 
         // enable touch gestures
         chart.setTouchEnabled(true);
@@ -84,10 +94,68 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
         seekBarY.setProgress(100);
 
         Legend l = chart.getLegend();
-        l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
-        l.setOrientation(Legend.LegendOrientation.VERTICAL);
-        l.setDrawInside(false);
+
+        YAxis axisLeft = chart.getAxisLeft();
+        YAxis axisRight = chart.getAxisRight();
+        axisLeft.setAxisMinimum(20);
+        axisLeft.setAxisMaximum(42);
+        axisLeft.setGranularityEnabled(true);
+        axisRight.setAxisMaximum(310);
+        axisRight.setInverted(true);
+        axisRight.setAxisMinimum(200);
+
+        chart.getXAxis().setValueFormatter(new IAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float value, AxisBase axis) {
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM-dd");
+                return simpleDateFormat.format(value*1000);
+            }
+        });
+
+        LineDataSet lineDataSet = new LineDataSet(genLineData1(), "1");
+        lineDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+
+        LineDataSet lineDataSet1 = new LineDataSet(genLineData2(), "2");
+        lineDataSet1.setColor(Color.RED);
+        lineDataSet1.setAxisDependency(YAxis.AxisDependency.RIGHT);
+        lineDataSet1.setValueFormatter(new IValueFormatter() {
+            @Override
+            public String getFormattedValue(float value, Entry entry, int dataSetIndex, ViewPortHandler viewPortHandler) {
+                Log.d(TAG, "getFormattedValue: value "+value);
+                return value+"";
+            }
+        });
+
+        LineData data = new LineData(lineDataSet, lineDataSet1);
+
+        chart.setData(data);
+    }
+
+    private static final String TAG = "MultiLineChartActivity";
+    private List<Entry> genLineData2() {
+        List<Entry> returnData = new ArrayList<Entry>();
+        for (int i = 0; i < data2.length; i++) {
+            returnData.add(new Entry(str2Tl(date[i]),Float.parseFloat(data2[i])));
+        }
+        return returnData;
+    }
+
+    private Long str2Tl(String date){
+
+      long tl =   (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse("2021-"+date+" 00:00:00", new ParsePosition(0)).getTime() / 1000;
+
+        return tl;
+
+    }
+
+
+
+    private List<Entry> genLineData1() {
+        List<Entry> returnData = new ArrayList<Entry>();
+        for (int i = 0; i < data1.length; i++) {
+            returnData.add(new Entry(str2Tl(date[i]),data1[i]));
+        }
+        return returnData;
     }
 
     private final int[] colors = new int[] {
@@ -133,8 +201,8 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
         ((LineDataSet) dataSets.get(0)).setCircleColors(ColorTemplate.VORDIPLOM_COLORS);
 
         LineData data = new LineData(dataSets);
-        chart.setData(data);
-        chart.invalidate();
+//        chart.setData(data);
+//        chart.invalidate();
     }
 
     @Override
